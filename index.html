@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>국방예산 분야별 · 신규사업 대시보드</title>
+  <!-- Google Fonts (Pretendard / Noto Sans KR) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js, SheetJS, PapaParse CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <!-- Default Sample Data script -->
+  <script src="sample_data.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-light">
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="header-title">국방예산 분야별 · 신규사업 대시보드</h1>
+          <p class="header-subtitle" id="currentFileName">데이터: 2027년 국방예산 정부안 (기본 데이터)</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="themeToggleBtn" class="btn-icon" title="다크/라이트 모드 전환">
+          <svg id="themeIconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <svg id="themeIconMoon" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+        <button id="resetSampleBtn" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+          </svg>
+          기본데이터 복원
+        </button>
+        <div class="dropdown">
+          <button id="templateDownloadBtn" class="btn btn-secondary">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            양식 받기 ▼
+          </button>
+          <div class="dropdown-menu" id="templateDropdownMenu">
+            <a href="sample_template.xlsx" download="국방예산_표준양식.xlsx" class="dropdown-item">엑셀(.xlsx) 양식 다운로드</a>
+            <a href="sample_template.csv" download="국방예산_표준양식.csv" class="dropdown-item">CSV(.csv) 양식 다운로드</a>
+          </div>
+        </div>
+        <button id="printBtn" class="btn btn-outline" title="인쇄 및 PDF 저장">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+          </svg>
+          인쇄 / PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- File Upload Banner Area -->
+    <section class="upload-section">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display: none;">
+        <div class="drop-content">
+          <div class="drop-icon-wrapper">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="drop-text">
+            <p class="drop-primary"><strong>엑셀(.xlsx, .xls)</strong> 또는 <strong>CSV 파일</strong>을 여기에 드래그하거나 <u>클릭하여 업로드</u>하세요</p>
+            <p class="drop-secondary">제시된 서식(연번, 분야, 세부 사업, 구분/단위, 2026년, 2027년, 증감, 증가율, 핵심 내용) 자동 인식</p>
+          </div>
+          <div class="drop-actions">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">파일 선택</button>
+          </div>
+        </div>
+      </div>
+      <!-- Multi-sheet selector (hidden by default) -->
+      <div id="sheetSelectorWrap" class="sheet-selector-wrap hidden">
+        <label for="sheetSelect">엑셀 시트 선택:</label>
+        <select id="sheetSelect" class="form-select"></select>
+      </div>
+    </section>
+
+    <!-- ====================================================================== -->
+    <!-- INTERACTIVE INFOGRAPHIC CONTROLLER & DYNAMIC INFOGRAPHIC DISPLAY PANEL -->
+    <!-- ====================================================================== -->
+    <section class="infographic-master-section">
+      <!-- Selector Pill Toolbar -->
+      <div class="selector-card">
+        <!-- 1. Sector Selection Bar -->
+        <div class="selector-row">
+          <div class="selector-label">
+            <span class="selector-badge badge-blue">분야별 선택</span>
+            <span class="selector-hint">중점영역 클릭 시 인포그래픽 변경</span>
+          </div>
+          <div class="chips-scroll-container" id="categoryChipsContainer">
+            <!-- Dynamic Category Chips rendered via JS -->
+          </div>
+        </div>
+
+        <!-- 2. New Project Selection Bar -->
+        <div class="selector-row" style="margin-top: 0.85rem; padding-top: 0.85rem; border-top: 1px dashed var(--border-color);">
+          <div class="selector-label">
+            <span class="selector-badge badge-orange">✨ 신규사업 선택</span>
+            <span class="selector-hint">2027 신규사업 클릭 시 맞춤형 인포그래픽</span>
+          </div>
+          <div class="chips-scroll-container" id="newProjectChipsContainer">
+            <!-- Dynamic New Project Chips rendered via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Infographic Container (Changes based on selection) -->
+      <div class="dynamic-infographic-board" id="dynamicInfographicBoard">
+        <!-- Dynamic Infographic Content Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- KPI Summary Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card highlight-card">
+        <div class="kpi-icon-box blue">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">당해년도(2027년) 총 예산</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value" id="kpiTotal2027">0</span>
+            <span class="kpi-unit" id="kpiUnit">억원</span>
+          </div>
+          <div class="kpi-sub" id="kpiDiffRow">
+            전년 대비 <span class="badge-diff positive" id="kpiTotalDiff">+0억원 (+0.0%)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-box green">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">전년도(2026년) 예산</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value" id="kpiTotal2026">0</span>
+            <span class="kpi-unit">억원</span>
+          </div>
+          <div class="kpi-sub">
+            총 순증액: <strong id="kpiNetIncrease">0</strong> 억원
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card highlight-new">
+        <div class="kpi-icon-box orange">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">신규 사업 (신규 편성)</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value text-orange" id="kpiNewProjectCount">0</span>
+            <span class="kpi-unit">개 사업</span>
+          </div>
+          <div class="kpi-sub">
+            신규 예산합: <strong id="kpiNewBudgetTotal">0</strong> 억원 (<span id="kpiNewBudgetShare">0%</span>)
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon-box purple">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">분야 및 세부사업 구성</span>
+          <div class="kpi-val-row">
+            <span class="kpi-value" id="kpiCategoryCount">0</span>
+            <span class="kpi-unit">개 분야 /</span>
+            <span class="kpi-value" id="kpiTotalProjectCount" style="margin-left: 6px;">0</span>
+            <span class="kpi-unit">개 사업</span>
+          </div>
+          <div class="kpi-sub">
+            최대 투자: <span id="kpiTopCategory" class="badge-sub">-</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="tab-overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+        </svg>
+        전체 종합 분석
+      </button>
+      <button class="nav-tab" data-tab="tab-categories">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
+        </svg>
+        분야(중점영역)별 심층 분석
+      </button>
+      <button class="nav-tab tab-new-highlight" data-tab="tab-new-projects">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        신규사업 특화 대시보드
+        <span class="tab-badge" id="tabNewBadge">0</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-datagrid">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        전체 데이터 그리드
+      </button>
+    </nav>
+
+    <!-- Tab Contents -->
+    <main class="tab-content-container">
+
+      <!-- 1. Overview Tab -->
+      <section id="tab-overview" class="tab-pane active">
+        <div class="grid-2-cols">
+          <!-- Chart 1: 분야별 예산 비중 (도넛) -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">분야별 예산 비중 (2027년 정부안)</h3>
+                <p class="chart-desc">각 중점 투자영역이 전체 예산에서 차지하는 점유율</p>
+              </div>
+            </div>
+            <div class="chart-body donut-chart-body">
+              <canvas id="categoryShareChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: 전년 대비 증감 비교 (바 차트) -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">분야별 전년 대비 예산 비교</h3>
+                <p class="chart-desc">2026년 본예산 vs 2027년 정부안 (단위: 억원)</p>
+              </div>
+            </div>
+            <div class="chart-body">
+              <canvas id="categoryCompareChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2-cols" style="margin-top: 1.5rem;">
+          <!-- Top 증감 사업 카드 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">주요 증액 사업 TOP 5</h3>
+                <p class="chart-desc">순증가액(B-A) 기준 최대 증액 사업</p>
+              </div>
+            </div>
+            <div class="top-list-body" id="topIncreaseList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- 신규 사업 요약 하이라이트 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">주요 신규사업 하이라이트 TOP 5</h3>
+                <p class="chart-desc">2027년 최초 편성된 전략적 신규사업</p>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="switchTab('tab-new-projects')">전체보기 →</button>
+            </div>
+            <div class="top-list-body" id="overviewNewProjectsList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Categories Deep Dive Tab -->
+      <section id="tab-categories" class="tab-pane">
+        <div class="filter-toolbar">
+          <div class="filter-group">
+            <label for="categorySelect">분야(중점영역) 선택:</label>
+            <select id="categorySelect" class="form-select filter-select">
+              <option value="ALL">전체 분야 한눈에 보기</option>
+            </select>
+          </div>
+          <div class="stat-summary-pill" id="categoryStatPill">
+            전체 분야: <strong id="catPillCount">0</strong>개
+          </div>
+        </div>
+
+        <!-- Category cards grid -->
+        <div class="category-cards-grid" id="categoryCardsGrid">
+          <!-- Rendered via JS -->
+        </div>
+
+        <!-- Category Detail Breakdown -->
+        <div class="chart-card" style="margin-top: 1.5rem;">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title" id="catDetailTitle">분야별 세부 사업 내역 및 예산 구조</h3>
+              <p class="chart-desc">선택된 분야 내 세부사업별 편성 규모 및 증가율 비교</p>
+            </div>
+          </div>
+          <div class="chart-body" style="height: 380px;">
+            <canvas id="categoryDetailChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. New Projects Tab -->
+      <section id="tab-new-projects" class="tab-pane">
+        <div class="new-projects-intro-banner">
+          <div class="banner-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="banner-text">
+            <h4>2027년 신규 추진 핵심 사업 분석</h4>
+            <p>전년도(2026년) 예산이 없거나 비고 및 증가율에 '신규'로 명시된 사업들을 심층 분석합니다. 미래 전력 확보 및 신규 복지/인프라 과제가 집중되어 있습니다.</p>
+          </div>
+          <div class="banner-stat">
+            <span class="banner-stat-num" id="newProjectsBannerTotal">0</span>
+            <span class="banner-stat-label">신규사업 총 예산(억원)</span>
+          </div>
+        </div>
+
+        <div class="grid-2-cols" style="margin-top: 1.5rem;">
+          <!-- New projects budget ranking chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">신규사업 예산 규모 랭킹</h3>
+                <p class="chart-desc">사업별 2027년 신규 편성 금액 (단위: 억원)</p>
+              </div>
+            </div>
+            <div class="chart-body" style="height: 340px;">
+              <canvas id="newProjectsRankingChart"></canvas>
+            </div>
+          </div>
+
+          <!-- New projects sector distribution chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h3 class="chart-title">신규사업 분야별 분포</h3>
+                <p class="chart-desc">신규사업이 어느 중점영역에 집중 편성되었는지 분석</p>
+              </div>
+            </div>
+            <div class="chart-body" style="height: 340px;">
+              <canvas id="newProjectsSectorChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- New project cards list -->
+        <div style="margin-top: 1.5rem;">
+          <h3 class="section-title">신규 사업 상세 카드 목록 (<span id="newCardsCount">0</span>건)</h3>
+          <div class="new-project-cards-grid" id="newProjectCardsGrid">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Data Grid Tab -->
+      <section id="tab-datagrid" class="tab-pane">
+        <!-- Controls Bar -->
+        <div class="datagrid-controls">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="tableSearchInput" placeholder="사업명, 분야, 핵심내용 검색...">
+          </div>
+
+          <div class="filter-controls">
+            <select id="tableCategoryFilter" class="form-select filter-select">
+              <option value="ALL">모든 분야 보기</option>
+            </select>
+
+            <select id="tableTypeFilter" class="form-select filter-select">
+              <option value="ALL">전체 사업</option>
+              <option value="NEW">✨ 신규사업만</option>
+              <option value="EXISTING">기존 지속사업만</option>
+            </select>
+          </div>
+
+          <div class="table-actions">
+            <button id="exportExcelBtn" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              엑셀 내보내기
+            </button>
+            <button id="exportCsvBtn" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              CSV 내보내기
+            </button>
+          </div>
+        </div>
+
+        <div class="table-meta-bar">
+          <span>총 <strong id="tableFilteredCount">0</strong>건 표시 중 (전체 <span id="tableTotalCount">0</span>건)</span>
+          <span class="table-hint">💡 행을 클릭하면 핵심 내용 및 보도자료 원문 상세 팝업이 열립니다.</span>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-responsive">
+          <table class="data-table" id="budgetTable">
+            <thead>
+              <tr>
+                <th data-sort="seq" style="width: 60px;">연번 ↕</th>
+                <th data-sort="category">분야 (중점영역) ↕</th>
+                <th data-sort="projectName">세부 사업 / 주요 지표 ↕</th>
+                <th style="width: 70px;">단위</th>
+                <th data-sort="budget2026" class="text-right">2026년 (A) ↕</th>
+                <th data-sort="budget2027" class="text-right">2027년 정부안 (B) ↕</th>
+                <th data-sort="diff" class="text-right">증감 (B-A) ↕</th>
+                <th data-sort="rate" class="text-right">증가율 ↕</th>
+                <th>핵심 내용 및 보도자료 근거</th>
+              </tr>
+            </thead>
+            <tbody id="budgetTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>국방예산 데이터 시각화 & 대시보드 시스템 &middot; 엑셀/CSV 데이터 즉시 파싱 &middot; 반응형 지원</p>
+    </footer>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay hidden" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <span class="modal-badge" id="modalCategoryBadge">분야명</span>
+          <h2 class="modal-title" id="modalTitle">세부 사업명</h2>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-budget-grid">
+          <div class="modal-budget-box">
+            <span class="label">2026년 예산</span>
+            <span class="value" id="modal2026">-</span>
+          </div>
+          <div class="modal-budget-box highlight">
+            <span class="label">2027년 정부안</span>
+            <span class="value" id="modal2027">-</span>
+          </div>
+          <div class="modal-budget-box">
+            <span class="label">증감액 (B-A)</span>
+            <span class="value" id="modalDiff">-</span>
+          </div>
+          <div class="modal-budget-box">
+            <span class="label">증가율</span>
+            <span class="value" id="modalRate">-</span>
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <h4>핵심 내용 및 보도자료 박스 원문 근거</h4>
+          <div class="modal-desc-box" id="modalDesc">
+            <!-- Full details -->
+          </div>
+        </div>
+
+        <div class="modal-section" id="modalSubInfoWrap">
+          <h4>사업 분석 메모</h4>
+          <ul class="modal-meta-list" id="modalMetaList">
+            <!-- Rendered notes -->
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
